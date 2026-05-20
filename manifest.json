@@ -1,0 +1,28 @@
+{
+  "manifest_version": 3,
+  "name": "DeutschTube: Learn German with YouTube",
+  "version": "1.0",
+  "description": "Learn German interactively while watching YouTube videos.",
+  "permissions": [
+    "storage",
+    "scripting"
+  ],
+  "host_permissions": [
+    "*://*.youtube.com/*",
+    "*://translate.googleapis.com/*"
+  ],
+  "background": {
+    "service_worker": "src/background/background.js",
+    "type": "module"
+  },
+  "content_scripts": [
+    {
+      "matches": ["*://*.youtube.com/watch*"],
+      "js": ["src/content/content.jsx"],
+      "css": ["src/content/index.css"]
+    }
+  ],
+  "action": {
+    "default_title": "Open Vocabulary"
+  }
+}

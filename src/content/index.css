@@ -1,0 +1,253 @@
+#deutschtube-overlay {
+  position: absolute;
+  bottom: 15%;
+  left: 0;
+  width: 100%;
+  z-index: 2147483647;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+/* COMPLETELY hide YouTube's default subtitles */
+.ytp-caption-window-bottom, .ytp-caption-window-container {
+  display: none !important;
+}
+
+/* ─── Subtitle Box ─────────────────────────────────────── */
+.deutschtube-subtitle-box {
+  background: transparent !important;
+  backdrop-filter: none !important;
+  padding: 10px 20px;
+  border-radius: 12px;
+  font-size: 24px;
+  color: white !important;
+  pointer-events: auto;
+  text-align: center;
+  max-width: 80%;
+  line-height: 1.4;
+  border: none !important;
+  box-shadow: none !important;
+  text-shadow: 2px 2px 4px rgba(0,0,0,0.9), -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+/* Visible state — subtitle is shown */
+.deutschtube-subtitle-box.subtitle-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Hidden state — subtitle is fading out */
+.deutschtube-subtitle-box.subtitle-hidden {
+  opacity: 0;
+  transform: translateY(4px);
+}
+
+.deutschtube-word-wrapper {
+  position: relative;
+  display: inline-block;
+  cursor: pointer;
+  padding: 0 4px;
+  margin: 0 2px;
+  border-radius: 6px;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.deutschtube-word-wrapper:hover, .deutschtube-word-wrapper.is-hovered {
+  background: rgba(255, 255, 255, 0.2);
+  color: #fbbf24; /* yellow-400 */
+  transform: translateY(-2px);
+}
+
+.deutschtube-word-wrapper.is-active {
+  background: #2563eb;
+  color: white !important;
+  box-shadow: 0 0 15px rgba(37, 99, 235, 0.4);
+}
+
+.deutschtube-punctuation {
+  padding: 0 1px;
+  opacity: 0.9;
+}
+
+/* Mini Tooltip on Hover */
+.deutschtube-mini-tooltip {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1f2937;
+  color: white;
+  padding: 6px 10px;
+  border-radius: 6px;
+  font-size: 14px;
+  white-space: nowrap;
+  margin-bottom: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+  z-index: 100;
+  animation: tooltip-fade 0.2s ease;
+}
+
+@keyframes tooltip-fade {
+  from { opacity: 0; transform: translate(-50%, 5px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+/* Expanded Popup on Click */
+.deutschtube-expanded-popup {
+  position: absolute;
+  bottom: 120%;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #ffffff;
+  color: #1f2937;
+  width: 240px;
+  padding: 16px;
+  border-radius: 12px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4);
+  z-index: 200;
+  text-align: left;
+  line-height: 1.5;
+  cursor: default;
+  animation: popup-slide 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes popup-slide {
+  from { opacity: 0; transform: translate(-50%, 20px) scale(0.95); }
+  to { opacity: 1; transform: translate(-50%, 0) scale(1); }
+}
+
+.popup-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 10px;
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 8px;
+}
+
+.popup-word, .popup-pos, .popup-meanings {
+  text-shadow: none !important;
+  color: #111827 !important;
+}
+
+.popup-word {
+  font-weight: 800;
+  font-size: 20px;
+}
+
+.popup-pos {
+  font-size: 12px;
+  text-transform: uppercase;
+  color: #6b7280 !important;
+  font-weight: 600;
+}
+
+.popup-meanings {
+  font-size: 15px;
+  margin-bottom: 16px;
+  font-weight: 500;
+}
+
+.popup-save-btn {
+  background: #2563eb;
+  color: white;
+  border: none;
+  width: 100%;
+  padding: 10px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.popup-save-btn:hover {
+  background: #1d4ed8;
+}
+
+/* Sidebar Overhaul */
+#deutschtube-sidebar {
+  position: fixed;
+  top: 0;
+  right: 0;
+  height: 100vh;
+  width: 350px;
+  background: #ffffff;
+  box-shadow: -10px 0 30px rgba(0, 0, 0, 0.1);
+  z-index: 999999;
+  display: flex;
+  flex-direction: column;
+  animation: sidebar-slide 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+@keyframes sidebar-slide {
+  from { transform: translateX(100%); }
+  to { transform: translateX(0); }
+}
+
+.deutschtube-sidebar-header {
+  padding: 24px;
+  background: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+  font-weight: 800;
+  font-size: 20px;
+  color: #111827;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.deutschtube-sidebar-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 16px;
+  background: #ffffff;
+}
+
+.deutschtube-word-card {
+  padding: 16px;
+  border-radius: 12px;
+  background: #f3f4f6;
+  margin-bottom: 12px;
+  transition: transform 0.2s;
+  border: 1px solid transparent;
+}
+
+.deutschtube-word-card:hover {
+  transform: scale(1.02);
+  border-color: #d1d5db;
+}
+
+.deutschtube-word-card-title {
+  font-weight: 700;
+  font-size: 17px;
+  color: #111827;
+  margin-bottom: 4px;
+}
+
+/* CEFR level badges */
+.dt-level-badge {
+  position: absolute;
+  top: -8px;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 8px;
+  font-weight: 800;
+  padding: 1px 3px;
+  border-radius: 3px;
+  line-height: 1;
+  pointer-events: none;
+  opacity: 0.85;
+}
+.dt-level-a1 { background: rgba(255,255,255,0.15); color: #d1d5db; }
+.dt-level-a2 { background: rgba(134,239,172,0.2); color: #86efac; }
+.dt-level-b1 { background: rgba(253,224,71,0.2); color: #fde047; }
+.dt-level-b2 { background: rgba(251,146,60,0.2); color: #fb923c; }
+.dt-level-c1 { background: rgba(248,113,113,0.2); color: #f87171; }
+
+.deutschtube-word-card-meaning {
+  font-size: 14px;
+  color: #4b5563;
+}
