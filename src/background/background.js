@@ -16,8 +16,10 @@ function sm2(card, quality) {
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
   if (request.type === 'SAVE_WORD') {
-    chrome.storage.local.get(['savedWords'], (result) => {
-      let words = result.savedWords || [];
+    const lang = request.language || 'de';
+    const key = `savedWords_${lang}`;
+    chrome.storage.local.get([key], (result) => {
+      let words = result[key] || [];
       if (words.some(w => w.word === request.wordData.word)) {
         sendResponse({ success: true, duplicate: true });
         return;
@@ -29,36 +31,56 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
         srs: { repetitions: 0, interval: 1, ef: 2.5, nextReview: Date.now() },
       };
       words.push(newWord);
-      chrome.storage.local.set({ savedWords: words }, () => sendResponse({ success: true, duplicate: false }));
+      chrome.storage.local.set({ [key]: words }, () => sendResponse({ success: true, duplicate: false }));
     });
     return true;
   }
 
   if (request.type === 'DELETE_WORD') {
-    chrome.storage.local.get(['savedWords'], (result) => {
-      const words = (result.savedWords || []).filter(w => w.id !== request.id);
-      chrome.storage.local.set({ savedWords: words }, () => sendResponse({ success: true }));
+    const lang = request.language || 'de';
+    const key = `savedWords_${lang}`;
+    chrome.storage.local.get([key], (result) => {
+      const words = (result[key] || []).filter(w => w.id !== request.id);
+      chrome.storage.local.set({ [key]: words }, () => sendResponse({ success: true }));
     });
     return true;
   }
 
   if (request.type === 'TOGGLE_LEARNED') {
-    chrome.storage.local.get(['savedWords'], (result) => {
-      const words = (result.savedWords || []).map(w => w.id === request.id ? { ...w, learned: !w.learned } : w);
-      chrome.storage.local.set({ savedWords: words }, () => sendResponse({ success: true }));
+    const lang = request.language || 'de';
+    const key = `savedWords_${lang}`;
+    chrome.storage.local.get([key], (result) => {
+      const words = (result[key] || []).map(w => w.id === request.id ? { ...w, learned: !w.learned } : w);
+      chrome.storage.local.set({ [key]: words }, () => sendResponse({ success: true }));
     });
     return true;
   }
 
   if (request.type === 'REVIEW_WORD') {
-    // request.id, request.quality (5=easy, 3=hard, 1=wrong)
-    chrome.storage.local.get(['savedWords'], (result) => {
-      const words = (result.savedWords || []).map(w => {
+    const lang = request.language || 'de';
+    const key = `savedWords_${lang}`;
+    chrome.storage.local.get([key], (result) => {
+      const words = (result[key] || []).map(w => {
         if (w.id !== request.id) return w;
         return { ...w, srs: sm2(w, request.quality) };
       });
-      chrome.storage.local.set({ savedWords: words }, () => sendResponse({ success: true }));
+      chrome.storage.local.set({ [key]: words }, () => sendResponse({ success: true }));
     });
+    return true;
+  }
+
+  if (request.type === 'SAVE_SETTINGS') {
+    chrome.storage.local.set(
+      { language: request.language, threshold: request.threshold },
+      () => sendResponse({ success: true })
+    );
+    return true;
+  }
+
+  if (request.type === 'RESET_SEEN_WORDS') {
+    const lang = request.language || 'de';
+    const key = `seenWords_${lang}`;
+    chrome.storage.local.set({ [key]: {} }, () => sendResponse({ success: true }));
     return true;
   }
 });

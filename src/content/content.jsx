@@ -49,11 +49,14 @@ function initExtension() {
   }
 }
 
-// Re-initialize if navigating to a new video in the SPA
+// Re-initialize and reset seen words on SPA navigation
 let currentUrl = location.href;
 setInterval(() => {
   if (location.href !== currentUrl) {
     currentUrl = location.href;
+    chrome.storage.local.get(['language'], (result) => {
+      chrome.runtime.sendMessage({ type: 'RESET_SEEN_WORDS', language: result.language || 'de' });
+    });
     setTimeout(initExtension, 2000);
   }
 }, 1000);

@@ -18,14 +18,14 @@
   "content_scripts": [
     {
       "js": [
-        "assets/content.jsx-C-rvguch.js"
+        "assets/content.jsx-D84W66H7.js"
       ],
       "matches": [
         "*://*.youtube.com/watch*"
       ],
       "css": [
         "src/content/index.css",
-        "assets/content-DGzQmIbC.css"
+        "assets/content-DFdmObN9.css"
       ]
     }
   ],
@@ -38,7 +38,7 @@
         "*://*.youtube.com/*"
       ],
       "resources": [
-        "assets/content.jsx-C-rvguch.js"
+        "assets/content.jsx-D84W66H7.js"
       ],
       "use_dynamic_url": false
     }

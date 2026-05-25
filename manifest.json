@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "DeutschTube: Learn German with YouTube",
-  "version": "1.0",
-  "description": "Learn German interactively while watching YouTube videos.",
+  "name": "PolyTube: Learn Languages with YouTube",
+  "version": "1.1",
+  "description": "Learn German, French, Korean, and Arabic interactively while watching YouTube videos.",
   "permissions": [
     "storage",
     "scripting"

@@ -1,18 +1,26 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import wordLevels from '../data/germanWordLevels';
+import freqDe from '../data/freq_de';
+import freqFr from '../data/freq_fr';
+import freqKo from '../data/freq_ko';
+import freqAr from '../data/freq_ar';
+import WordPopup from './WordPopup';
+
+const FREQ_MAPS = { de: freqDe, fr: freqFr, ko: freqKo, ar: freqAr };
+const PINK = '#f472b6';
 
 // ─── YouTube Provider ─────────────────────────────────────────────────────────
-// Reads directly from YouTube's hidden caption container — mirrors exactly
-// what YouTube shows, replaces each time (no accumulation).
 class YouTubeSubtitleProvider {
   constructor() { this._intervalId = null; this._last = ""; }
   getName() { return "youtube"; }
 
   start(callback) {
+    let chunkOffset = 0;
+    let prevTotalWords = 0;
+    const CHUNK_SIZE = 10;
+
     this._intervalId = setInterval(() => {
       let text = '';
 
-      // Try caption windows first (most reliable — one window = one subtitle line)
       const windows = document.querySelectorAll('.caption-window');
       if (windows.length > 0) {
         const lastWin = windows[windows.length - 1];
@@ -22,17 +30,39 @@ class YouTubeSubtitleProvider {
         text = parts.join(' ');
       }
 
-      // Fallback: read full container (covers layout variants)
       if (!text) {
         const container = document.querySelector('.ytp-caption-window-container');
         if (container) text = container.textContent.trim();
       }
 
-      if (text !== this._last) {
-        this._last = text;
-        callback(text);
+      if (!text) {
+        if (this._last !== '') { this._last = ''; callback(''); }
+        return;
       }
-    }, 80);
+
+      const words = text.trim().split(/\s+/).filter(Boolean);
+      const total = words.length;
+
+      if (total < prevTotalWords * 0.6 || chunkOffset >= total) {
+        chunkOffset = 0;
+      }
+      prevTotalWords = total;
+
+      const chunkWords = words.slice(chunkOffset);
+
+      if (chunkWords.length >= CHUNK_SIZE) {
+        chunkOffset = total;
+        return;
+      }
+
+      if (chunkWords.length === 0) return;
+
+      const display = chunkWords.join(' ');
+      if (display !== this._last) {
+        this._last = display;
+        callback(display);
+      }
+    }, 50);
   }
 
   stop() { clearInterval(this._intervalId); }
@@ -100,30 +130,58 @@ class GenericSubtitleProvider {
   stop() { if (this._observer) this._observer.disconnect(); clearTimeout(this._timer); }
 }
 
-// ─── Level colors ─────────────────────────────────────────────────────────────
-const LEVEL_COLORS = {
-  A1: null,              // white (default)
-  A2: '#86efac',         // green
-  B1: '#fde047',         // yellow
-  B2: '#fb923c',         // orange
-  C1: '#f87171',         // red
-};
-
 // ─── SubtitleOverlay Component ────────────────────────────────────────────────
 const SubtitleOverlay = ({ videoElement }) => {
   const [subtitle, setSubtitle] = useState("");
   const [visible, setVisible] = useState(false);
   const [hoveredWord, setHoveredWord] = useState(null);
   const [clickedWord, setClickedWord] = useState(null);
-  const [translationData, setTranslationData] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [settings, setSettings] = useState({ language: 'de', threshold: 3000 });
 
   const providerRef = useRef(null);
   const clearTimerRef = useRef(null);
   const videoRef = useRef(videoElement);
   const pausedByHoverRef = useRef(false);
+  const seenWordsRef = useRef({});
 
   useEffect(() => { videoRef.current = videoElement; }, [videoElement]);
+
+  // Load settings from storage
+  useEffect(() => {
+    chrome.storage.local.get(['language', 'threshold'], (result) => {
+      setSettings({
+        language: result.language || 'de',
+        threshold: result.threshold ?? 3000,
+      });
+    });
+    const onStorageChange = (changes) => {
+      const updated = {};
+      if (changes.language) updated.language = changes.language.newValue;
+      if (changes.threshold) updated.threshold = changes.threshold.newValue;
+      if (Object.keys(updated).length) setSettings(prev => ({ ...prev, ...updated }));
+    };
+    chrome.storage.onChanged.addListener(onStorageChange);
+    return () => chrome.storage.onChanged.removeListener(onStorageChange);
+  }, []);
+
+  // Clear local ref when language changes so new session starts fresh
+  useEffect(() => {
+    seenWordsRef.current = {};
+  }, [settings.language]);
+
+  // Track seen words (deduplicated, per-language storage key)
+  const trackWord = useCallback((word, rank) => {
+    const wordKey = word.toLowerCase();
+    if (seenWordsRef.current[wordKey] !== undefined) return;
+    seenWordsRef.current[wordKey] = rank;
+    const storageKey = `seenWords_${settings.language}`;
+    chrome.storage.local.get([storageKey], (result) => {
+      const existing = result[storageKey] || {};
+      if (existing[wordKey] !== undefined) return;
+      existing[wordKey] = rank;
+      chrome.storage.local.set({ [storageKey]: existing });
+    });
+  }, [settings.language]);
 
   const showSubtitle = useCallback((text) => {
     clearTimeout(clearTimerRef.current);
@@ -185,102 +243,70 @@ const SubtitleOverlay = ({ videoElement }) => {
     }
   };
 
-  // ─── Translation ───
-  const fetchMeanings = async (word) => {
-    setLoading(true);
-    setTranslationData(null);
-    try {
-      const res = await fetch(
-        `https://translate.googleapis.com/translate_a/single?client=gtx&sl=de&tl=en&dt=t&dt=bd&dt=md&q=${encodeURIComponent(word)}`
-      );
-      const data = await res.json();
-      let meaning = 'N/A', pos = '', synonyms = [];
-      if (data[0]?.[0]?.[0]) meaning = data[0][0][0];
-      if (data[1]) { synonyms = data[1].flatMap(g => g[1] || []).slice(0, 3); pos = data[1][0]?.[0] || ''; }
-      setTranslationData({ primary: meaning, synonyms: synonyms.length ? synonyms.join(", ") : meaning, pos });
-    } catch {
-      setTranslationData({ primary: 'Error', synonyms: 'Connection failed', pos: '' });
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const handleWordHover = (word) => {
     if (clickedWord) return;
     setHoveredWord(word);
-    if (!translationData || hoveredWord !== word) fetchMeanings(word);
   };
 
   const handleWordClick = (word, e) => {
     e.stopPropagation();
-    setClickedWord(word);
-    setHoveredWord(null);
-    fetchMeanings(word);
-  };
-
-  const handleSaveWord = (word) => {
-    const data = { word, meaning: translationData?.synonyms || translationData?.primary || '', pos: translationData?.pos || '' };
-    if (typeof chrome !== 'undefined' && chrome.runtime?.sendMessage) {
-      chrome.runtime.sendMessage({ type: 'SAVE_WORD', wordData: data });
+    if (clickedWord === word) {
+      setClickedWord(null);
     } else {
-      window.dispatchEvent(new CustomEvent('deutschtube-save-word', { detail: data }));
+      setClickedWord(word);
+      setHoveredWord(null);
     }
   };
 
   if (!subtitle) return null;
 
-  const tokens = subtitle.match(/[\p{L}äöüßÄÖÜẞ]+|[^\p{L}\s]/gu) || [];
+  const freqMap = FREQ_MAPS[settings.language] || freqDe;
+  const isRTL = settings.language === 'ar';
+  const tokens = subtitle.match(/\p{L}+|[^\p{L}\s]/gu) || [];
 
   return (
     <div
       className={`deutschtube-subtitle-box ${visible ? 'subtitle-visible' : 'subtitle-hidden'}`}
+      style={isRTL ? { direction: 'rtl' } : {}}
       onClick={() => setClickedWord(null)}
       onMouseEnter={handleSubtitleMouseEnter}
       onMouseLeave={handleSubtitleMouseLeave}
     >
       {tokens.map((token, index) => {
-        const isWord = /[\p{L}äöüßÄÖÜẞ]/u.test(token);
-        if (!isWord) return <span key={index} className="deutschtube-punctuation">{token}</span>;
+        const isWord = /\p{L}/u.test(token);
+        if (!isWord) return <span key={index} className="deutschtube-punctuation">{token} </span>;
 
-        const level = wordLevels[token.toLowerCase()];
-        const levelColor = level ? LEVEL_COLORS[level] : '#9ca3af';
-        const levelStyle = levelColor ? { color: levelColor } : {};
+        const rank = freqMap[token.toLowerCase()] ?? 99999;
+        const isUnknown = rank > settings.threshold;
+
+        // Track every word seen
+        trackWord(token, rank);
+
+        const wordStyle = isUnknown && !hoveredWord && !clickedWord
+          ? { color: PINK }
+          : {};
 
         return (
           <span
             key={`${token}-${index}`}
             className={`deutschtube-word-wrapper ${hoveredWord === token ? 'is-hovered' : ''} ${clickedWord === token ? 'is-active' : ''}`}
-            style={!hoveredWord && !clickedWord ? levelStyle : {}}
+            style={wordStyle}
             onMouseEnter={() => handleWordHover(token)}
             onMouseLeave={() => setHoveredWord(null)}
             onClick={(e) => handleWordClick(token, e)}
           >
-            {(level === 'B2' || level === 'C1') && <span className={`dt-level-badge dt-level-${level.toLowerCase()}`}>{level}</span>}
-            {token}
+            {token}{' '}
 
             {hoveredWord === token && !clickedWord && (
-              <div className="deutschtube-mini-tooltip">
-                {loading ? '...' : (translationData?.primary || '...')}
-              </div>
+              <div className="deutschtube-mini-tooltip">Click for definition</div>
             )}
 
             {clickedWord === token && (
-              <div className="deutschtube-expanded-popup" onClick={(e) => e.stopPropagation()}>
-                <div className="popup-header">
-                  <span className="popup-word">{token}</span>
-                  <span className="popup-pos">{translationData?.pos}</span>
-                </div>
-                <div className="popup-body">
-                  {loading ? (
-                    <div className="loader">Loading meanings...</div>
-                  ) : (
-                    <>
-                      <div className="popup-meanings">{translationData?.synonyms}</div>
-                      <button className="popup-save-btn" onClick={() => handleSaveWord(token)}>Save Word</button>
-                    </>
-                  )}
-                </div>
-              </div>
+              <WordPopup
+                word={token}
+                language={settings.language}
+                onSave={() => setClickedWord(null)}
+              />
             )}
           </span>
         );

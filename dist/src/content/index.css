@@ -175,11 +175,12 @@
   height: 100vh;
   width: 350px;
   background: #ffffff;
-  box-shadow: -10px 0 30px rgba(0, 0, 0, 0.1);
-  z-index: 999999;
+  box-shadow: -8px 0 32px rgba(0, 0, 0, 0.14), -1px 0 0 rgba(0,0,0,0.06);
+  z-index: 999998;
   display: flex;
   flex-direction: column;
-  animation: sidebar-slide 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+  animation: sidebar-slide 0.28s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 @keyframes sidebar-slide {
@@ -187,16 +188,63 @@
   to { transform: translateX(0); }
 }
 
-.deutschtube-sidebar-header {
-  padding: 24px;
-  background: #f9fafb;
-  border-bottom: 1px solid #e5e7eb;
+.dt-tab-handle {
+  position: fixed;
+  top: 50%;
+  transform: translateY(-50%);
+  background: #2563eb;
+  color: white;
+  width: 36px;
+  padding: 18px 0;
+  border-radius: 10px 0 0 10px;
+  cursor: pointer;
+  z-index: 999999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: -4px 0 16px rgba(37, 99, 235, 0.35);
+  transition: right 0.28s cubic-bezier(0.22, 1, 0.36, 1), background 0.15s ease;
+  user-select: none;
+  border: none;
+  outline: none;
+}
+
+.dt-tab-handle:hover {
+  background: #1d4ed8;
+}
+
+.dt-tab-handle__label {
+  writing-mode: vertical-rl;
   font-weight: 800;
-  font-size: 20px;
-  color: #111827;
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.dt-tab-handle__badge {
+  background: #ef4444;
+  color: white;
+  border-radius: 9999px;
+  width: 18px;
+  height: 18px;
+  font-size: 10px;
+  font-weight: 800;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.deutschtube-sidebar-header {
+  padding: 16px 20px;
+  background: #fff;
+  border-bottom: 1px solid #f3f4f6;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  flex-shrink: 0;
 }
 
 .deutschtube-sidebar-content {
