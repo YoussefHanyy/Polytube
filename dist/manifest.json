@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "DeutschTube: Learn German with YouTube",
-  "version": "1.0",
-  "description": "Learn German interactively while watching YouTube videos.",
+  "name": "PolyTube: Learn Languages with YouTube",
+  "version": "1.1",
+  "description": "Learn German, French, Korean, and Arabic interactively while watching YouTube videos.",
   "permissions": [
     "storage",
     "scripting"
@@ -18,7 +18,7 @@
   "content_scripts": [
     {
       "js": [
-        "assets/content.jsx-D84W66H7.js"
+        "assets/content.jsx-DZhak4yQ.js"
       ],
       "matches": [
         "*://*.youtube.com/watch*"
@@ -38,7 +38,7 @@
         "*://*.youtube.com/*"
       ],
       "resources": [
-        "assets/content.jsx-D84W66H7.js"
+        "assets/content.jsx-DZhak4yQ.js"
       ],
       "use_dynamic_url": false
     }
